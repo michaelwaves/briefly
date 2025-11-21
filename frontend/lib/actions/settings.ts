@@ -170,3 +170,90 @@ export async function ensureUserSettings() {
 
   return existingSettings;
 }
+
+export async function getArticlesByCategories(categoryIds: number[], page: number = 0, limit: number = 10) {
+  const offset = page * limit;
+
+  const articles = await db
+    .selectFrom("articles")
+    .where("category_id", "in", categoryIds)
+    .where("vector", "is not", null)
+    .select(["id", "text", "summary", "source", "date_written", "category_id"])
+    .orderBy("date_written", "desc")
+    .limit(limit)
+    .offset(offset)
+    .execute();
+
+  const totalCount = await db
+    .selectFrom("articles")
+    .where("category_id", "in", categoryIds)
+    .where("vector", "is not", null)
+    .select(db.fn.countAll().as("count"))
+    .executeTakeFirst();
+
+  return {
+    articles,
+    totalCount: Number(totalCount?.count || 0),
+    totalPages: Math.ceil(Number(totalCount?.count || 0) / limit)
+  };
+}
+
+export async function updateUserPreferenceVector(articleIds: number[]) {
+  const session = await auth();
+  if (!session?.user?.email) {
+    throw new Error("Unauthorized");
+  }
+
+  const user = await db
+    .selectFrom("users")
+    .where("email", "=", session.user.email)
+    .selectAll()
+    .executeTakeFirst();
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  const articles = await db
+    .selectFrom("articles")
+    .where("id", "in", articleIds)
+    .where("vector", "is not", null)
+    .select(["id", "vector"])
+    .execute();
+
+  if (articles.length === 0) {
+    throw new Error("No articles found with embeddings");
+  }
+
+  const vectors = articles.map(a => {
+    const vectorStr = a.vector as string;
+    return vectorStr.slice(1, -1).split(',').map(Number);
+  });
+
+  const dimensions = vectors[0].length;
+  const avgVector = new Array(dimensions).fill(0);
+
+  for (const vector of vectors) {
+    for (let i = 0; i < dimensions; i++) {
+      avgVector[i] += vector[i];
+    }
+  }
+
+  for (let i = 0; i < dimensions; i++) {
+    avgVector[i] /= vectors.length;
+  }
+
+  const avgVectorStr = `[${avgVector.join(',')}]`;
+
+  await db
+    .updateTable("settings")
+    .set({
+      preference_vector: avgVectorStr,
+      updated_at: new Date(),
+    })
+    .where("user_id", "=", user.id)
+    .execute();
+
+  revalidatePath("/d");
+  return { success: true };
+}

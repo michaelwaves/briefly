@@ -46,7 +46,7 @@ export default function TopicSelection() {
     setSaving(true);
     try {
       await updateUserTopics(selectedTopics);
-      router.push("/onboarding/length");
+      router.push("/onboarding/interests");
     } catch (error) {
       console.error("Failed to save topics:", error);
       alert("Failed to save topics. Please try again.");
