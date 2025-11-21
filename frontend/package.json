@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@auth/pg-adapter": "^1.11.0",
+    "@aws-sdk/client-s3": "^3.937.0",
     "@aws-sdk/client-ses": "^3.927.0",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "^1.2.11",
