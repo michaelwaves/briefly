@@ -25,13 +25,13 @@ export default function DeliverySetup() {
       description: "Your brief will be delivered to Spotify daily.",
     });
     setTimeout(() => {
-      router.push("/dashboard");
+      router.push("/d");
     }, 1000);
   };
 
   const handleRssSetup = () => {
     localStorage.setItem("briefly_delivery", JSON.stringify({ method: "rss", frequency }));
-    router.push("/dashboard");
+    router.push("/d");
   };
 
   const copyRssFeed = () => {

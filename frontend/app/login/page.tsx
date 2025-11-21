@@ -4,7 +4,7 @@ import { Radio } from "lucide-react";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 
-export default async function SignupPage() {
+export default async function LoginPage() {
   const session = await auth();
 
   if (session?.user) {
@@ -19,8 +19,8 @@ export default async function SignupPage() {
             <Radio className="h-6 w-6 text-primary" />
             <span className="text-xl font-bold lowercase">briefly</span>
           </Link>
-          <h1 className="text-3xl font-bold mb-2">Let's personalize your daily brief</h1>
-          <p className="text-muted-foreground">Sign up to get started. This takes less than 30 seconds.</p>
+          <h1 className="text-3xl font-bold mb-2">Welcome to Briefly</h1>
+          <p className="text-muted-foreground">Sign in to access your daily brief</p>
         </div>
 
         <div className="space-y-4">
@@ -28,7 +28,7 @@ export default async function SignupPage() {
             action={async () => {
               "use server"
               await signIn("google", {
-                redirectTo: "/onboarding/topics"
+                redirectTo: "/d"
               })
             }}
           >
@@ -48,7 +48,7 @@ export default async function SignupPage() {
             action={async () => {
               "use server"
               await signIn("github", {
-                redirectTo: "/onboarding/topics"
+                redirectTo: "/d"
               })
             }}
           >
@@ -66,9 +66,9 @@ export default async function SignupPage() {
         </div>
 
         <p className="text-center text-sm text-muted-foreground mt-8">
-          Already have an account?{" "}
-          <Link href="/login" className="text-primary hover:underline font-medium">
-            Sign in
+          Don't have an account?{" "}
+          <Link href="/signup" className="text-primary hover:underline font-medium">
+            Sign up
           </Link>
         </p>
       </Card>
