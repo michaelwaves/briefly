@@ -6,6 +6,11 @@ from sqlalchemy.orm import Session
 from typing import List
 from datetime import datetime
 import logging
+import os
+import sys
+
+# Add parent directory to path to import from backend
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from database import get_db, engine
 from models import Base, Article
@@ -14,9 +19,22 @@ from schemas import (
     ArticleResponse,
     ParallelExtractBatch,
     BatchProcessResponse,
-    ParallelExtractResult
+    ParallelExtractResult,
+    NewsWithAudioRequest,
+    NewsWithAudioResponse,
+    ArticleAudioInfo
 )
 from embedding_service import get_embedding_service
+from summarization_service import get_summarization_service
+from parallel_unified_service import ParallelUnifiedService
+
+# Import TTS service from backend
+try:
+    from services.tts_service import tts_service
+except ImportError:
+    logger = logging.getLogger(__name__)
+    logger.warning("Could not import tts_service from backend. Audio generation will not be available.")
+    tts_service = None
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -216,6 +234,205 @@ async def delete_article(article_id: int, db: Session = Depends(get_db)):
 
     logger.info(f"Deleted article with ID: {article_id}")
     return None
+
+
+@app.post("/news/generate-with-audio", response_model=NewsWithAudioResponse)
+async def generate_news_with_audio(request: NewsWithAudioRequest, db: Session = Depends(get_db)):
+    """
+    Complete workflow: Search → Extract → Summarize → Generate Audio → Store
+
+    This endpoint:
+    1. Uses Parallel Search API to find relevant articles
+    2. Uses Parallel Extract API to get full content
+    3. Uses Azure OpenAI to create 2-minute summaries
+    4. Uses ElevenLabs to generate audio for each summary
+    5. Stores articles with embeddings in the database
+
+    Returns article metadata and paths to generated audio files
+    """
+    if not tts_service:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Text-to-speech service is not available"
+        )
+
+    logger.info(f"Starting news with audio generation for query: '{request.query}'")
+
+    response_data = {
+        "success": False,
+        "query": request.query,
+        "articles_found": 0,
+        "articles_processed": 0,
+        "articles_with_audio": 0,
+        "articles": [],
+        "errors": []
+    }
+
+    try:
+        # Step 1 & 2: Search and Extract using Parallel API
+        logger.info("Step 1-2: Searching and extracting articles with Parallel API...")
+
+        parallel_service = ParallelUnifiedService(api_url="http://localhost:8000")
+
+        # For AI/ML/Startup news, we'll use the query with additional search queries
+        search_queries = [
+            request.query,
+            "AI artificial intelligence",
+            "machine learning ML",
+            "startups technology",
+            "agentic AI systems",
+            "MCP model context protocol",
+            "HITL human in the loop",
+            "reinforcement learning RL"
+        ]
+
+        from parallel import Parallel
+        parallel_client = Parallel(api_key=os.environ.get("PARALLEL_API_KEY"))
+
+        # Search
+        search_result = parallel_client.beta.search(
+            objective=request.query,
+            search_queries=search_queries[:4],  # Limit to 4 queries
+            max_results=request.max_articles,
+            excerpts={"max_chars_per_result": 8000}
+        )
+
+        response_data["articles_found"] = len(search_result.results)
+        logger.info(f"✓ Found {response_data['articles_found']} articles")
+
+        if not search_result.results:
+            response_data["errors"].append("No articles found")
+            return NewsWithAudioResponse(**response_data)
+
+        # Extract
+        urls = [r.url for r in search_result.results][:request.max_articles]
+        extract_result = parallel_client.beta.extract(
+            urls=urls,
+            objective=f"Extract detailed content for: {request.query}",
+            excerpts={"max_chars_per_result": 50000},
+            full_content=True
+        )
+
+        logger.info(f"✓ Extracted {len(extract_result.results)} articles")
+
+        if not extract_result.results:
+            response_data["errors"].append("No content extracted")
+            return NewsWithAudioResponse(**response_data)
+
+        # Step 3-5: Process each article (Summarize → Audio → Store)
+        summarization_service = get_summarization_service()
+        embedding_service = get_embedding_service()
+
+        output_dir = os.path.join(os.path.dirname(__file__), "..", "generated_audio")
+        os.makedirs(output_dir, exist_ok=True)
+
+        for idx, result in enumerate(extract_result.results):
+            try:
+                # Get full text
+                text_content = None
+                if result.excerpts and len(result.excerpts) > 0:
+                    text_content = result.excerpts[0]
+                elif result.full_content:
+                    text_content = result.full_content[:10000]
+                else:
+                    response_data["errors"].append(f"Article {idx}: No text content")
+                    continue
+
+                # Step 3: Generate 2-minute summary using Azure OpenAI
+                logger.info(f"Generating {request.target_duration_minutes}-minute summary for article {idx+1}...")
+                summary_text = summarization_service.create_audio_summary(
+                    text=text_content,
+                    title=result.title or "",
+                    target_duration_minutes=request.target_duration_minutes
+                )
+
+                if not summary_text:
+                    response_data["errors"].append(f"Article {idx}: Failed to generate summary")
+                    continue
+
+                word_count = len(summary_text.split())
+                logger.info(f"✓ Generated summary with {word_count} words")
+
+                # Step 4: Generate audio from summary using ElevenLabs
+                logger.info(f"Generating audio for article {idx+1}...")
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                audio_filename = f"article_{idx+1}_{timestamp}.mp3"
+
+                audio_path = tts_service.generate_audio_from_text(
+                    text=summary_text,
+                    output_dir=output_dir,
+                    filename=audio_filename,
+                    voice_id=request.voice_id
+                )
+
+                logger.info(f"✓ Generated audio: {audio_filename}")
+
+                # Step 5: Store article in database with embedding
+                logger.info(f"Storing article {idx+1} in database...")
+
+                # Parse publish date
+                date_written = None
+                if result.publish_date:
+                    try:
+                        date_written = datetime.fromisoformat(result.publish_date.replace('Z', '+00:00'))
+                    except Exception as e:
+                        logger.warning(f"Could not parse date: {e}")
+
+                # Generate embedding from original text (not summary)
+                embedding = embedding_service.generate_embedding(text_content)
+
+                # Create article
+                article = Article(
+                    text=text_content,  # Store full text
+                    summary=summary_text,  # Store the 2-minute summary
+                    relevance_score=request.relevance_score,
+                    date_written=date_written,
+                    source=result.url,  # URL stored in source field
+                    category_id=request.category_id,
+                    vector=embedding
+                )
+
+                db.add(article)
+                db.flush()
+
+                logger.info(f"✓ Stored article {article.id} from {result.url}")
+
+                # Add to response
+                response_data["articles"].append({
+                    "article_id": article.id,
+                    "title": result.title or "Untitled",
+                    "source": result.url,
+                    "audio_filename": audio_filename,
+                    "audio_path": audio_path,
+                    "summary_word_count": word_count
+                })
+
+                response_data["articles_with_audio"] += 1
+                response_data["articles_processed"] += 1
+
+            except Exception as e:
+                error_msg = f"Article {idx} ({result.url if hasattr(result, 'url') else 'unknown'}): {str(e)}"
+                response_data["errors"].append(error_msg)
+                logger.error(error_msg)
+
+        # Commit all articles
+        db.commit()
+
+        response_data["success"] = response_data["articles_with_audio"] > 0
+
+        logger.info(f"✓ Complete! Processed {response_data['articles_with_audio']} articles with audio")
+
+        return NewsWithAudioResponse(**response_data)
+
+    except Exception as e:
+        db.rollback()
+        error_msg = f"Workflow error: {str(e)}"
+        response_data["errors"].append(error_msg)
+        logger.error(error_msg, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
 
 if __name__ == "__main__":

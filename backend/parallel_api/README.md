@@ -108,6 +108,50 @@ print(f"Article IDs: {result['article_ids']}")
 GET /
 ```
 
+### **NEW**: Generate News Articles with Audio Summaries
+```bash
+POST /news/generate-with-audio
+Content-Type: application/json
+
+{
+    "query": "Latest news on AI, Machine Learning, and Startups",
+    "max_articles": 10,
+    "category_id": null,
+    "relevance_score": 9,
+    "target_duration_minutes": 2,
+    "voice_id": null
+}
+```
+
+**Complete Workflow**: This endpoint performs the entire pipeline:
+1. Searches web using Parallel Search API
+2. Extracts full article content using Parallel Extract API
+3. Generates 2-minute summaries using Azure OpenAI GPT-4
+4. Creates audio files using ElevenLabs text-to-speech
+5. Stores articles with embeddings in PostgreSQL
+
+**Response**:
+```json
+{
+    "success": true,
+    "query": "Latest news on AI, Machine Learning, and Startups",
+    "articles_found": 15,
+    "articles_processed": 10,
+    "articles_with_audio": 10,
+    "articles": [
+        {
+            "article_id": 17,
+            "title": "AI Startup Raises $50M...",
+            "source": "https://example.com/article",
+            "audio_filename": "article_1_20251121_153000.mp3",
+            "audio_path": "/path/to/generated_audio/article_1_20251121_153000.mp3",
+            "summary_word_count": 295
+        }
+    ],
+    "errors": []
+}
+```
+
 ### Create Single Article
 ```bash
 POST /articles/

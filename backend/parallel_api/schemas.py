@@ -54,3 +54,34 @@ class BatchProcessResponse(BaseModel):
     articles_created: int
     article_ids: List[int]
     errors: List[str] = []
+
+
+class ArticleAudioInfo(BaseModel):
+    """Information about an article and its generated audio"""
+    article_id: int
+    title: str
+    source: str
+    audio_filename: str
+    audio_path: str
+    summary_word_count: int
+
+
+class NewsWithAudioRequest(BaseModel):
+    """Request for generating news articles with audio summaries"""
+    query: str = Field(..., description="Search query for news articles")
+    max_articles: int = Field(10, ge=1, le=20, description="Maximum articles to process")
+    category_id: Optional[int] = Field(None, description="Optional category ID")
+    relevance_score: int = Field(8, ge=1, le=10, description="Relevance score")
+    target_duration_minutes: int = Field(2, ge=1, le=5, description="Target audio duration per article")
+    voice_id: Optional[str] = Field(None, description="Optional ElevenLabs voice ID")
+
+
+class NewsWithAudioResponse(BaseModel):
+    """Response for news articles with audio summaries"""
+    success: bool
+    query: str
+    articles_found: int
+    articles_processed: int
+    articles_with_audio: int
+    articles: List[ArticleAudioInfo]
+    errors: List[str] = []
