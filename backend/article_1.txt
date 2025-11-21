@@ -1,0 +1,186 @@
+Skip to last reply Skip to top
+
+Skip to main content
+
+
+Log In
+
+​
+
+Topics
+
+More
+
+Categories
+
+Beginners
+Intermediate
+Course
+Research
+Models
+All categories
+​
+
+​
+
+You can login using your huggingface.co credentials.
+
+This forum is powered by Discourse and relies on a trust-level system . As a new user, you’re temporarily limited in the number of topics and posts you can create. To lift those restrictions, just spend time reading other posts (to be precise, enter 5 topics, read through 30 posts and spend a total of 10 minutes reading).
+
+Start with reading this post . Then maybe someone already had that error that is bugging you check with a quick search . Or you can read the latest awesome paper the team discussed.
+
+Tutorial: Implementing Transformer from Scratch - A Step-by-Step Guide
+Show and Tell
+
+You have selected 0 posts.
+
+select all
+
+cancel selecting
+
+9.9k views 7 likes 3 links
+
+3
+
+
+
+
+Dec 2024
+
+1 / 6
+
+Dec 2024
+
+May 1
+
+post by bird-of-paradise on Dec 18, 2024
+
+bird-of-paradise
+
+Dec 2024
+
+Hi everyone! Ever wondered how transformers work under the hood? I recently took on the challenge of implementing the Transformer architecture from scratch, and I’ve just published a tutorial to share my journey!
+
+While working on the implementation, I realized that clear documentation would make this more valuable for others learning about transformers. With a little help from Claude to organize and refine my explanations, I’m excited to share the result with you. The code, insights, and learning process are all mine—Claude just made them more accessible!
+
+This tutorial dives into key components like the encoder-decoder stack, attention mechanisms, and even the challenges of testing. You can check it out here
+
+I’d love your feedback—whether it’s suggestions, questions, or ideas for next steps. For example, I’m considering creating another tutorial focusing on training modules, and I’d love to hear what you’d find most useful. This is a ‘first edition,’ and I’m excited to evolve it with your input!
+
+eyes
+
+1
+
+​
+
+​
+
+9.9k views 7 likes 3 links
+
+3
+
+
+
+
+post by racame75 on Dec 20, 2024
+
+racame75
+
+Dec 2024
+
+It really seems promising.
+I’ll indulge into it as soon as I can.
+thank a lot for the effort.
+Mind if I translate it in french ?
+
+eyes
+
+1
+
+​
+
+​
+
+post by bird-of-paradise on Dec 20, 2024
+
+bird-of-paradise
+
+Dec 2024
+
+Hi Racame,
+
+Thank you so much for your kind words! I’m thrilled you find the tutorial promising and appreciate the effort that went into it.
+You’re more than welcome to translate it into French – thank you for making the content accessible to a broader audience.
+While I don’t speak French myself, I’d love to know how the translation process goes and what feedback you get from the French-speaking community. If there’s anything I can do to support the effort, please let me know!
+
+Best regards,
+Jen
+
++1
+
+1
+
+​
+
+​
+
+post by Bachstelze on Dec 25, 2024
+
+Bachstelze
+
+Dec 2024
+
+Hey @ bird-of-paradise
+thanks for the guide. I am looking at how to build and train an encoder-decoder model (based on modernBERT) with the huggingface Trainer: Support modernBERT for encoder-decoder models · Issue #35385 · huggingface/transformers · GitHub
+Do you have any advice for it?
+
++1
+
+1
+
+​
+
+​
+
+post by bird-of-paradise on Dec 25, 2024
+
+bird-of-paradise
+
+Dec 2024
+
+Hi Bachstelze,
+Thanks for your interest! From what I can see in the GitHub issue, the challenge isn’t with the encoder-decoder architecture itself (which is what my tutorial covers), but rather with ModernBERT’s specific implementation in the Hugging Face library. As Niels Rogge pointed out, ModernBERT currently doesn’t support cross-attention, which is needed for encoder-decoder models.
+
+If you’re looking to use ModernBERT specifically, you’d need to either:
+
+Wait for cross-attention support to be added to ModernBERT in the transformers library, or
+Consider using another BERT variant that already supports cross-attention
+If you’re interested in understanding how cross-attention works in encoder-decoder models, my tutorial might help explain the mechanics, even though it doesn’t specifically address ModernBERT implementation.
+
++1
+
+1
+
+​
+
+​
+
+4 months later
+
+post by shunzh on May 1
+Reply
+
+Related topics
+Topic	Replies	Views	Activity
+Difference between transformer encoder and decoder			
+Models |1 |11.9k |Mar 2021 | |How can I run separately the Encoder and Decoder layers?
+
+🤗Transformers |1 |1.8k |Nov 2020 | |Seq2Seq Encoder Decoder model Tensorflow
+
+🤗Transformers |4 |782 |Jan 2021 | |Training issue of a Transformer based Encoder-Decoder model based on pre-trained BanglaBERT
+
+Models |1 |751 |May 2022 | |GPT-GPT encoder decoder
+
+🤗Transformers |0 |295 |May 2021 |
+
+Invalid date Invalid date
