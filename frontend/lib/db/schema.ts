@@ -28,16 +28,41 @@ export interface Accounts {
   userId: number;
 }
 
-export interface CreditPurchases {
-  amount: number;
-  created_at: Generated<Timestamp>;
-  credits: number;
-  id: Generated<string>;
-  status: string;
-  stripe_payment_intent_id: string | null;
-  stripe_session_id: string;
-  updated_at: Generated<Timestamp>;
+export interface Articles {
+  category_id: number | null;
+  date_created: Generated<Timestamp>;
+  date_written: Timestamp | null;
+  id: Generated<number>;
+  relevance_score: number | null;
+  source: string | null;
+  summary: string | null;
+  text: string;
+  vector: string | null;
+}
+
+export interface Categories {
+  date_created: Generated<Timestamp>;
+  icon: string | null;
+  id: Generated<number>;
+  name: string;
+}
+
+export interface Feedback {
+  article_id: number;
+  date_created: Generated<Timestamp>;
+  id: Generated<number>;
+  score: number;
+  text: string | null;
   user_id: number;
+}
+
+export interface Podcasts {
+  date_created: Generated<Timestamp>;
+  id: Generated<number>;
+  s3_link: string | null;
+  script: string;
+  spotify_link: string | null;
+  user_id: number | null;
 }
 
 export interface Sessions {
@@ -47,34 +72,25 @@ export interface Sessions {
   userId: number;
 }
 
-export interface Subscriptions {
+export interface Settings {
+  category_ids: Generated<number[]>;
   created_at: Generated<Timestamp>;
+  delivery_method: Generated<string | null>;
+  frequency: Generated<string | null>;
   id: Generated<number>;
-  status: string;
-  stripe_current_period_end: Timestamp;
-  stripe_price_id: string;
-  stripe_subscription_id: string;
+  language: string | null;
+  length: Generated<number | null>;
+  preference_vector: string | null;
   updated_at: Generated<Timestamp>;
   user_id: number;
 }
 
-export interface UsageLogs {
-  amount: number;
-  created_at: Generated<Timestamp>;
-  id: Generated<string>;
-  reason: string;
-  success: boolean;
-  user_id: number;
-}
-
 export interface Users {
-  credits: Generated<number>;
   email: string | null;
   emailVerified: Timestamp | null;
   id: Generated<number>;
   image: string | null;
   name: string | null;
-  stripeCustomerId: string | null;
 }
 
 export interface VerificationToken {
@@ -85,10 +101,12 @@ export interface VerificationToken {
 
 export interface DB {
   accounts: Accounts;
-  credit_purchases: CreditPurchases;
+  articles: Articles;
+  categories: Categories;
+  feedback: Feedback;
+  podcasts: Podcasts;
   sessions: Sessions;
-  subscriptions: Subscriptions;
-  usage_logs: UsageLogs;
+  settings: Settings;
   users: Users;
   verification_token: VerificationToken;
 }

@@ -176,7 +176,7 @@ export async function getArticlesByCategories(categoryIds: number[], page: numbe
 
   const articles = await db
     .selectFrom("articles")
-    .where("category_id", "in", categoryIds)
+    // .where("category_id", "in", categoryIds)
     .where("vector", "is not", null)
     .select(["id", "text", "summary", "source", "date_written", "category_id"])
     .orderBy("date_written", "desc")

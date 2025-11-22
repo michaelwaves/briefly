@@ -9,7 +9,7 @@ psycopg2-binary==2.9.10
 pgvector==0.3.6
 
 # Parallel API client
-parallel-sdk==0.4.14
+# parallel-sdk==0.4.14
 
 # Azure OpenAI
 openai==1.55.3
