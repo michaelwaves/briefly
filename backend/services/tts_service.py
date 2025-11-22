@@ -1,4 +1,4 @@
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 from elevenlabs import ElevenLabs, save
 from config import settings
 import os
@@ -17,7 +17,7 @@ class TTSService:
         articles: List[Dict[str, Any]],
         output_dir: str = "generated_audio",
         voice_id: Optional[str] = None
-    ) -> str:
+    ) -> Tuple[str, str]:
         """
         Generate audio from a list of articles and combine them into a podcast-style audio.
 
@@ -27,7 +27,7 @@ class TTSService:
             voice_id: Optional custom voice ID (uses default if not provided)
 
         Returns:
-            Path to the generated audio file
+            Tuple of (audio file path, script text)
         """
         # Use provided voice_id or fall back to default
         voice = voice_id or self.voice_id
@@ -55,7 +55,7 @@ class TTSService:
             for chunk in audio:
                 f.write(chunk)
 
-        return output_path
+        return output_path, script
 
     def generate_audio_from_text(
         self,

@@ -17,6 +17,8 @@ from models import (
 )
 from services.article_service import ArticleService
 from services.tts_service import tts_service
+from services.s3_service import s3_service
+from services.podcast_service import podcast_service
 from config import settings
 
 app = FastAPI(
@@ -135,15 +137,29 @@ async def generate_podcast_from_user_preferences(request: GeneratePodcastRequest
             )
 
         # Generate audio from articles
-        audio_path = tts_service.generate_audio_from_articles(
+        audio_path, script = tts_service.generate_audio_from_articles(
             articles=articles,
             voice_id=request.voice_id
         )
 
+        # Upload to S3
+        s3_url = s3_service.upload_podcast(audio_path)
+
+        # Save podcast record to database
+        podcast_id = podcast_service.create_podcast_record(
+            user_id=request.user_id,
+            script=script,
+            s3_link=s3_url
+        )
+
+        # Clean up local file
+        if os.path.exists(audio_path):
+            os.remove(audio_path)
+
         return PodcastResponse(
             success=True,
-            audio_path=audio_path,
-            filename=os.path.basename(audio_path),
+            audio_path=s3_url,
+            filename=os.path.basename(s3_url),
             article_count=len(articles),
             message=f"Successfully generated podcast with {len(articles)} articles"
         )
@@ -172,7 +188,7 @@ async def generate_podcast_from_articles(request: GeneratePodcastFromArticlesReq
             )
 
         # Generate audio from articles
-        audio_path = tts_service.generate_audio_from_articles(
+        audio_path, script = tts_service.generate_audio_from_articles(
             articles=articles,
             voice_id=request.voice_id
         )
@@ -210,7 +226,7 @@ async def generate_podcast_from_categories(request: GeneratePodcastFromCategorie
             )
 
         # Generate audio from articles
-        audio_path = tts_service.generate_audio_from_articles(
+        audio_path, script = tts_service.generate_audio_from_articles(
             articles=articles,
             voice_id=request.voice_id
         )
